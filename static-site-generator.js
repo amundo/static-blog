@@ -3,6 +3,29 @@ import { ensureDir } from "@std/fs";
 import { extract } from "@std/front-matter";
 import { parse } from '@marked';
 
+// Generate HTML page from template and content
+function generatePage(content, metadata) {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${metadata.title}</title>
+    <link  rel="stylesheet" href="css/blog.css">
+</head>
+<body>
+    <article>
+        <h1>${metadata.title}</h1>
+        <time>${new Date(metadata.date).toLocaleDateString()}</time>
+        ${content}
+    </article>
+</body>
+</html>
+  `;
+}
+
+
 // Parse date from frontmatter
 function parseFrontmatterDate(dateValue) {
   // If it's already a Temporal.PlainDate, return it
@@ -28,6 +51,7 @@ function parseFrontmatterDate(dateValue) {
   throw new Error(`Unexpected date format: ${dateValue}`);
 }
 
+
 // Format date for display
 function formatDate(date) {
   return date.toLocaleString({
@@ -37,50 +61,9 @@ function formatDate(date) {
   });
 }
 
-// Generate HTML page from template and content
-function generatePage(content, metadata) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${metadata.title}</title>
-    <style>
-      body {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 1rem;
-        font-family: system-ui, sans-serif;
-        line-height: 1.5;
-      }
-      pre {
-        padding: 1rem;
-        background: #f6f8fa;
-        border-radius: 4px;
-        overflow-x: auto;
-      }
-      a {
-        color: #0066cc;
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-    </style>
-</head>
-<body>
-    <article>
-        <h1>${metadata.title}</h1>
-        <time>${formatDate(parseFrontmatterDate(metadata.date))}</time>
-        ${content}
-    </article>
-</body>
-</html>
-  `;
-}
 
 function generateIndexPage(posts) {
+  console.log(posts.length)
   // Create a new array for sorting
   const sortedPosts = [...posts].sort((a, b) => {
     // First sort by date
@@ -149,6 +132,7 @@ function generateIndexPage(posts) {
   `;
 }
 
+
 // Keep track of post metadata
 const postMetadata = new Map();
 
@@ -161,7 +145,10 @@ async function processFile(srcPath, destDir) {
   try {
     const content = await Deno.readTextFile(srcPath);
     const { attrs: metadata, body } = extract(content);
-    const html = parse(body);
+    
+    // Use parse with our custom renderer
+    const html = parse(body)//, { renderer });
+    
     const pageHtml = generatePage(html, metadata);
     
     await Deno.writeTextFile(destPath, pageHtml);
@@ -170,7 +157,6 @@ async function processFile(srcPath, destDir) {
     console.error(`Error processing ${baseName}:`, error);
   }
 }
-
 // Main build function
 async function build(postsDir = './posts', outputDir = './blog') {
   try {
@@ -205,6 +191,8 @@ async function build(postsDir = './posts', outputDir = './blog') {
     console.error('Build failed:', error);
   }
 }
+
+
 
 // Watch for changes
 async function watch(postsDir = './posts', outputDir = './blog') {
@@ -252,9 +240,10 @@ async function watch(postsDir = './posts', outputDir = './blog') {
 // CLI
 if (import.meta.main) {
   const args = Deno.args;
+  await build();
   if (args.includes('--watch')) {
     await watch();
   } else {
-    await build();
+    console.log('Build completed.');
   }
 }
