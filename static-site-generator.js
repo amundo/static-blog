@@ -1,8 +1,7 @@
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { extract } from "@std/front-matter/any";
-import { parse } from '@marked'
-
+import { extract } from "@std/front-matter";
+import { parse } from '@marked';
 
 // Generate HTML page from template and content
 function generatePage(content, metadata) {
@@ -14,14 +13,14 @@ function generatePage(content, metadata) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${metadata.title}</title>
     <style>
-      body { 
-        max-width: 800px; 
-        margin: 0 auto; 
+      body {
+        max-width: 800px;
+        margin: 0 auto;
         padding: 1rem;
         font-family: system-ui, sans-serif;
         line-height: 1.5;
       }
-      pre { 
+      pre {
         padding: 1rem;
         background: #f6f8fa;
         border-radius: 4px;
@@ -81,7 +80,29 @@ async function build(postsDir = './posts', outputDir = './blog') {
   }
 }
 
+// Watch for changes
+async function watch(postsDir = './posts', outputDir = './blog') {
+  console.log('Watching for changes...');
+  
+  const watcher = Deno.watchFs(postsDir);
+  
+  for await (const event of watcher) {
+    if (event.kind === 'modify' || event.kind === 'create') {
+      for (const path of event.paths) {
+        if (path.endsWith('.md')) {
+          await processFile(path, outputDir);
+        }
+      }
+    }
+  }
+}
+
 // CLI
 if (import.meta.main) {
-  await build();
+  const args = Deno.args;
+  if (args.includes('--watch')) {
+    await watch();
+  } else {
+    await build();
+  }
 }

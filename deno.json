@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@std/front-matter": "jsr:@std/front-matter@^1.0.7",
+    "@std/front-matter": "jsr:@std/front-matter@^1.0.7/any",
     "@std/fs": "jsr:@std/fs@^1.0.13",
     "@std/path": "jsr:@std/path@^1.0.8",
     "@marked": "npm:marked"
