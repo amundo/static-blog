@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Static Site Generator - Adding Watch Mode</title>
+    <title>Static Site Generator - Adding Watch Mode - Stage 2</title>
     <link  rel="stylesheet" href="css/blog.css">
 </head>
 <body>
     <article>
-        <h1>Static Site Generator - Adding Watch Mode</h1>
+        <h1>Static Site Generator - Adding Watch Mode - Stage 2</h1>
         <time>2/16/2025</time>
         <p>In this second stage of development, we&#39;ve added file watching capabilities to our static site generator. This makes the development process much smoother by automatically rebuilding pages when their source files change.</p>
 <h2>New Feature: Watch Mode</h2>
@@ -124,6 +124,10 @@ Generated my-post.html
 <p>The addition of watch mode makes development much more efficient, especially when making frequent changes to your content.</p>
 
     </article>
+    <script type=module>
+    import * as Prism from './lib/prism/Prism.js';
+    window.Prism = Prism
+    </script>
 </body>
 </html>
   

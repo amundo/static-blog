@@ -20,6 +20,10 @@ function generatePage(content, metadata) {
         <time>${new Date(metadata.date).toLocaleDateString()}</time>
         ${content}
     </article>
+    <script type=module>
+    import * as Prism from './lib/prism/Prism.js';
+    window.Prism = Prism
+    </script>
 </body>
 </html>
   `;

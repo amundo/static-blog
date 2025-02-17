@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Static Site Generator - Adding Index Page Generation</title>
+    <title>Static Site Generator - Adding Index Page Generation - Stage 3</title>
     <link  rel="stylesheet" href="css/blog.css">
 </head>
 <body>
     <article>
-        <h1>Static Site Generator - Adding Index Page Generation</h1>
+        <h1>Static Site Generator - Adding Index Page Generation - Stage 3</h1>
         <time>2/16/2025</time>
         <p>In this third stage of development, we&#39;ve added index page generation to our static site generator. This creates a home page that lists all blog posts, sorted by date, with their titles and descriptions. We&#39;ve implemented this in a way that maintains the efficiency of our file watching system.</p>
 <h2>New Feature: Index Page Generation</h2>
@@ -236,6 +236,10 @@ Post content goes here...
 <p>The addition of efficient index page generation makes the static site generator more complete and performant, providing a proper entry point for blog readers while maintaining fast rebuild times during development.</p>
 
     </article>
+    <script type=module>
+    import * as Prism from './lib/prism/Prism.js';
+    window.Prism = Prism
+    </script>
 </body>
 </html>
   
