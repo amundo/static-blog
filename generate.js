@@ -4,6 +4,7 @@ import { extract } from "@std/front-matter/any"
 import { parse } from "@marked"
 import { renderTemplate } from "./render-template.js"
 
+
 /**
  * Build a static site from markdown files
  * 
@@ -21,10 +22,6 @@ const build = async ({
   // Store original relative paths before resolving
   const originalOutputDir = outputDirectory
   
-  // Resolve absolute paths
-  postsDirectory = join(Deno.cwd(), postsDirectory)
-  outputDirectory = join(Deno.cwd(), outputDirectory)
-  templateDirectory = join(Deno.cwd(), templateDirectory)
   
   // Ensure directories exist
   await ensureDir(postsDirectory)
@@ -78,7 +75,7 @@ const build = async ({
       markdownPath: postFileEntry.path,
       outputPath,
       // Create URL relative to the project structure
-      url: `${originalOutputDir}/${outputFileName}`,
+      url: `${outputFileName}`,
     })
     
     // Store post information

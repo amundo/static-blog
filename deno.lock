@@ -5,6 +5,7 @@
     "jsr:@cascades/markdown-parser@*": "0.1.0",
     "jsr:@denosaurs/plug@1.0.3": "1.0.3",
     "jsr:@std/assert@~0.213.1": "0.213.1",
+    "jsr:@std/cli@^1.0.13": "1.0.13",
     "jsr:@std/collections@^1.0.9": "1.0.10",
     "jsr:@std/encoding@0.213.1": "0.213.1",
     "jsr:@std/fmt@0.213.1": "0.213.1",
@@ -42,6 +43,9 @@
     },
     "@std/assert@0.213.1": {
       "integrity": "24c28178b30c8e0782c18e8e94ea72b16282207569cdd10ffb9d1d26f2edebfe"
+    },
+    "@std/cli@1.0.13": {
+      "integrity": "5db2d95ab2dca3bca9fb6ad3c19908c314e93d6391c8b026725e4892d4615a69"
     },
     "@std/collections@1.0.10": {
       "integrity": "903af106a3d92970d74e20f7ebff77d9658af9bef4403f1dc42a7801c0575899"
@@ -99,6 +103,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@b-fuze/deno-dom@~0.1.49",
+      "jsr:@std/cli@^1.0.13",
       "jsr:@std/front-matter@^1.0.7",
       "jsr:@std/fs@^1.0.13",
       "jsr:@std/path@^1.0.8",
