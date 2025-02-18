@@ -4,7 +4,6 @@ import { extract } from "@std/front-matter/any"
 import { parse } from "@marked"
 import { renderTemplate } from "./render-template.js"
 
-
 /**
  * Build a static site from markdown files
  * 
@@ -14,97 +13,169 @@ import { renderTemplate } from "./render-template.js"
  * @param {String} options.templateDirectory Directory containing HTML templates
  * @returns {Object} Build results
  */
-const build = async ({ 
+const buildStaticSite = async ({ 
   postsDirectory = 'posts', 
   outputDirectory = 'blog',
   templateDirectory = 'templates'
 } = {}) => {
-  // Store original relative paths before resolving
-  const originalOutputDir = outputDirectory
+  // Prepare environment and load templates
+  await setupDirectories({ postsDirectory, outputDirectory, templateDirectory });
+  const templates = await loadTemplates(templateDirectory);
   
+  // Process content
+  const markdownFiles = await discoverMarkdownFiles(postsDirectory);
+  const posts = await processMarkdownFiles(markdownFiles, outputDirectory);
   
-  // Ensure directories exist
-  await ensureDir(postsDirectory)
-  await ensureDir(outputDirectory)
-  await ensureDir(templateDirectory)
+  // Organize content
+  const organizedPosts = sortAndLinkPosts(posts);
   
-  // Read templates
-  const postTemplatePath = join(templateDirectory, "post-template.html")
-  const indexTemplatePath = join(templateDirectory, "index-template.html")
-  const postTemplate = await Deno.readTextFile(postTemplatePath)
-  const indexTemplate = await Deno.readTextFile(indexTemplatePath)
+  // Generate output
+  await generatePostPages(organizedPosts, templates.post, outputDirectory);
+  await generateIndexPage(organizedPosts, templates.index, outputDirectory);
   
-  // Find all markdown files
-  const globPattern = `${postsDirectory}/*.md`
-  const postFileEntries = await Array.fromAsync(expandGlob(globPattern))
+  console.log(`Build complete: ${organizedPosts.length} posts generated`);
+  return { posts: organizedPosts.map(post => post.metadata) };
+}
+
+/**
+ * Set up required directories
+ */
+async function setupDirectories({ postsDirectory, outputDirectory, templateDirectory }) {
+  await ensureDir(postsDirectory);
+  await ensureDir(outputDirectory);
+  await ensureDir(templateDirectory);
+}
+
+/**
+ * Load HTML templates
+ */
+async function loadTemplates(templateDirectory) {
+  const postTemplatePath = join(templateDirectory, "post-template.html");
+  const indexTemplatePath = join(templateDirectory, "index-template.html");
   
-  // Process all posts
-  const posts = []
+  return {
+    post: await Deno.readTextFile(postTemplatePath),
+    index: await Deno.readTextFile(indexTemplatePath)
+  };
+}
+
+/**
+ * Find all markdown files in the posts directory
+ */
+async function discoverMarkdownFiles(postsDirectory) {
+  const globPattern = `${postsDirectory}/*.md`;
+  return await Array.fromAsync(expandGlob(globPattern));
+}
+
+/**
+ * Process markdown files into structured post objects
+ */
+async function processMarkdownFiles(markdownFiles, outputDirectory) {
+  const posts = [];
   
-  for (const postFileEntry of postFileEntries) {
+  for (const fileEntry of markdownFiles) {
     // Read and parse markdown
-    const postMarkdown = await Deno.readTextFile(postFileEntry.path)
-    const { attrs: metadata, body: markdown } = extract(postMarkdown)
+    const markdown = await Deno.readTextFile(fileEntry.path);
+    const { attrs: metadata, body: markdownContent } = extract(markdown);
     
     // Generate HTML from markdown
-    const html = parse(markdown)
+    const html = parse(markdownContent);
     
     // Prepare filename info
-    const fileName = basename(postFileEntry.path, ".md")
-    const outputFileName = `${fileName}.html`
-    const outputPath = join(outputDirectory, outputFileName)
+    const fileName = basename(fileEntry.path, ".md");
+    const outputFileName = `${fileName}.html`;
+    const outputPath = join(outputDirectory, outputFileName);
     
-    // Normalize date if present
-    if (metadata.date && typeof metadata.date === 'string') {
-      try {
-        // Ensure consistent date format
-        const date = new Date(metadata.date)
-        metadata.isoDate = date.toISOString()
-        metadata.formattedDate = date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      } catch (e) {
-        console.warn(`Invalid date format in ${fileName}: ${metadata.date}`)
-      }
-    }
-    
-    // Add file paths to metadata
-    Object.assign(metadata, {
-      markdownPath: postFileEntry.path,
-      outputPath,
-      // Create URL relative to the project structure
-      url: `${outputFileName}`,
-    })
+    // Process and normalize metadata
+    const processedMetadata = processPostMetadata(metadata, fileEntry.path, outputPath, outputFileName);
     
     // Store post information
     posts.push({
-      metadata,
-      markdown,
+      metadata: processedMetadata,
+      markdown: markdownContent,
       html,
-    })
+    });
   }
   
+  return posts;
+}
+
+/**
+ * Process and normalize post metadata
+ * 
+ * @param {Object} metadata Front matter metadata
+ * @param {String} markdownPath Path to the markdown file
+ * @param {String} outputPath Path to the output HTML file
+ * @param {String} outputFileName Output filename
+ * @returns {Object} Processed metadata
+ */
+function processPostMetadata(metadata, markdownPath, outputPath, outputFileName) {
+  const processedMetadata = { ...metadata };
+  
+  // Normalize date if present
+  if (processedMetadata.date && typeof processedMetadata.date === 'string') {
+    try {
+      // Ensure consistent date format
+      const date = new Date(processedMetadata.date);
+      processedMetadata.isoDate = date.toISOString();
+      processedMetadata.formattedDate = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      console.warn(`Invalid date format in ${markdownPath}: ${processedMetadata.date}`);
+    }
+  }
+  
+  // Add file paths to metadata
+  Object.assign(processedMetadata, {
+    markdownPath,
+    outputPath,
+    // Create URL relative to the project structure
+    url: outputFileName,
+  });
+  
+  return processedMetadata;
+}
+
+/**
+ * Sort posts by date and add navigation links
+ * 
+ * @param {Array} posts List of post objects
+ * @returns {Array} Sorted and linked posts
+ */
+function sortAndLinkPosts(posts) {
   // Sort posts by date (newest first)
   posts.sort((a, b) => {
     // Use isoDate if available, otherwise fallback to comparison
-    const dateA = a.metadata.isoDate ? new Date(a.metadata.isoDate) : new Date(0)
-    const dateB = b.metadata.isoDate ? new Date(b.metadata.isoDate) : new Date(0)
-    return dateB - dateA
-  })
+    const dateA = a.metadata.isoDate ? new Date(a.metadata.isoDate) : new Date(0);
+    const dateB = b.metadata.isoDate ? new Date(b.metadata.isoDate) : new Date(0);
+    return dateB - dateA;
+  });
   
   // Add navigation links
   posts.forEach((post, index) => {
-    post.metadata.isFirst = index === 0
-    post.metadata.isLast = index === posts.length - 1
-    post.metadata.previousPost = index > 0 ? posts[index - 1].metadata : null
-    post.metadata.nextPost = index < posts.length - 1 ? posts[index + 1].metadata : null
-  })
+    post.metadata.isFirst = index === 0;
+    post.metadata.isLast = index === posts.length - 1;
+    post.metadata.previousPost = index > 0 ? posts[index - 1].metadata : null;
+    post.metadata.nextPost = index < posts.length - 1 ? posts[index + 1].metadata : null;
+  });
+  
+  return posts;
+}
 
-  // Generate post files
+/**
+ * Generate individual post HTML pages
+ * 
+ * @param {Array} posts List of post objects
+ * @param {String} postTemplate Post HTML template
+ * @param {String} outputDirectory Directory to write generated files
+ * @returns {Promise} Promise that resolves when all posts are generated
+ */
+async function generatePostPages(posts, postTemplate, outputDirectory) {
   for (const post of posts) {
-    const { metadata, html } = post
+    const { metadata, html } = post;
     
     // Render the post using template
     const renderedPost = `<!doctype html>\n` + renderTemplate(postTemplate, {
@@ -121,31 +192,37 @@ const build = async ({
         `<a href="${metadata.previousPost.url}">&larr; ${metadata.previousPost.title}</a>` : '',
       '.next-post': metadata.nextPost ? 
         `<a href="${metadata.nextPost.url}">${metadata.nextPost.title} &rarr;</a>` : '',
-    })
+    });
     
     // Write post file
-    await ensureDir(dirname(metadata.outputPath))
-    await Deno.writeTextFile(metadata.outputPath, renderedPost)
+    await ensureDir(dirname(metadata.outputPath));
+    await Deno.writeTextFile(metadata.outputPath, renderedPost);
   }
-  
-  // Extract metadata for index
-  const postMetadata = posts.map(post => post.metadata)
+}
+
+/**
+ * Generate the index page listing all posts
+ * 
+ * @param {Array} posts List of post objects
+ * @param {String} indexTemplate Index HTML template
+ * @param {String} outputDirectory Directory to write generated files
+ * @returns {Promise} Promise that resolves when the index page is generated
+ */
+async function generateIndexPage(posts, indexTemplate, outputDirectory) {
+  const postMetadata = posts.map(post => post.metadata);
   
   // Build index page
   const indexHtml = renderTemplate(indexTemplate, {
-    '.post-list': buildPostList(postMetadata),
+    '.post-list': createPostListHtml(postMetadata),
     'title': 'Blog Index',
     '.blog-title': 'My Blog',
     '.blog-description': 'A collection of my thoughts and ideas',
-  })
+  });
   
   // Write index file
-  const indexOutputPath = join(outputDirectory, "index.html")
-  await Deno.writeTextFile(indexOutputPath, indexHtml)
-  console.log(`Generated: ${indexOutputPath}`)
-  
-  console.log(`Build complete: ${posts.length} posts generated`)
-  return { posts: postMetadata }
+  const indexOutputPath = join(outputDirectory, "index.html");
+  await Deno.writeTextFile(indexOutputPath, indexHtml);
+  console.log(`Generated: ${indexOutputPath}`);
 }
 
 /**
@@ -154,7 +231,7 @@ const build = async ({
  * @param {Array} posts List of post metadata objects
  * @returns {String} HTML for the post list
  */
-function buildPostList(posts) {
+function createPostListHtml(posts) {
   return posts.map(post => {
     return `
       <article class="post-item">
@@ -167,12 +244,23 @@ function buildPostList(posts) {
           `<span class="tag">${tag}</span>`).join('')}</div>` : ''}
       </article>
     `
-  }).join('\n')
+  }).join('\n');
 }
 
 // Run build if executed directly
 if (import.meta.main) {
-  await build()
+  await buildStaticSite();
 }
 
-export { build }
+export { 
+  buildStaticSite,
+  createPostListHtml,
+  processPostMetadata,
+  sortAndLinkPosts,
+  generateIndexPage,
+  generatePostPages,
+  processMarkdownFiles,
+  discoverMarkdownFiles,
+  loadTemplates,
+  setupDirectories
+}
