@@ -51,7 +51,8 @@ const build = async ({
     
     // Prepare filename info
     const fileName = basename(postFileEntry.path, ".md")
-    const outputPath = join(outputDirectory, `${fileName}.html`)
+    const outputFileName = `${fileName}.html`
+    const outputPath = join(outputDirectory, outputFileName)
     
     // Normalize date if present
     if (metadata.date && typeof metadata.date === 'string') {
@@ -73,7 +74,8 @@ const build = async ({
     Object.assign(metadata, {
       markdownPath: postFileEntry.path,
       outputPath,
-      url: `/${outputPath}`,
+      // Fix: Use relative URL path instead of absolute file path
+      url: `/${outputFileName}`,
     })
     
     // Store post information
@@ -122,9 +124,8 @@ const build = async ({
     })
     
     // Write post file
-    const postOutputPath = join(outputDirectory, metadata.outputPath)
-    await ensureDir(dirname(postOutputPath))
-    await Deno.writeTextFile(postOutputPath, renderedPost)
+    await ensureDir(dirname(metadata.outputPath))
+    await Deno.writeTextFile(metadata.outputPath, renderedPost)
   }
   
   // Extract metadata for index
@@ -155,7 +156,6 @@ const build = async ({
  */
 function buildPostList(posts) {
   return posts.map(post => {
-
     return `
       <article class="post-item">
         <header>
