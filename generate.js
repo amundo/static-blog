@@ -39,6 +39,12 @@ const buildStaticSite = async ({
 
 /**
  * Set up required directories
+ * 
+ * @param {Object} options Directory paths
+ * @param {String} options.postsDirectory Directory containing markdown files
+ * @param {String} options.outputDirectory Directory to write generated files
+ * @param {String} options.templateDirectory Directory containing HTML templates
+ * @returns {Promise} Promise that resolves when directories are created
  */
 async function setupDirectories({ postsDirectory, outputDirectory, templateDirectory }) {
   await ensureDir(postsDirectory);

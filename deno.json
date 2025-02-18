@@ -1,4 +1,10 @@
 {
+  "tasks": {
+    "build": "deno --allow-read --allow-write --unstable-temporal  generate.js",
+    "watch": "deno --allow-read --allow-write --unstable-temporal watch.js",
+    "doc": "deno doc --html generate.js",
+    "clean": "rm blog/*.html"
+  },
   "imports": {
     "@b-fuze/deno-dom": "jsr:@b-fuze/deno-dom@^0.1.49",
     "@std/cli": "jsr:@std/cli@^1.0.13",
