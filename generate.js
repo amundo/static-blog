@@ -56,8 +56,9 @@ async function setupDirectories({ postsDirectory, outputDirectory, templateDirec
  * Load HTML templates
  */
 async function loadTemplates(templateDirectory) {
-  const postTemplatePath = join(templateDirectory, "post-template.html");
-  const indexTemplatePath = join(templateDirectory, "index-template.html");
+  // Use URL-based approach for bundled templates
+  const postTemplatePath = new URL(`${templateDirectory}/post-template.html`, import.meta.url);
+  const indexTemplatePath = new URL(`${templateDirectory}/index-template.html`, import.meta.url);
   
   return {
     post: await Deno.readTextFile(postTemplatePath),

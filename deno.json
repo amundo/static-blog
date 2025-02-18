@@ -1,9 +1,11 @@
 {
   "tasks": {
-    "build": "deno --allow-read --allow-write --unstable-temporal  generate.js",
+    "blog": "deno --allow-read --allow-write --unstable-temporal  generate.js",
     "watch": "deno --allow-read --allow-write --unstable-temporal watch.js",
     "doc": "deno doc --html generate.js",
-    "clean": "rm blog/*.html"
+    "clean": "rm blog/*.html",
+    "mac": "deno compile --include posts --include blog --include templates --allow-read --allow-write --allow-net --target x86_64-apple-darwin -o generator generate.js",
+    "linux": "deno compile --include posts --include blog --include templates --allow-read --allow-write --allow-net --target x86_64-unknown-linux-gnu -o generator generate.js"
   },
   "imports": {
     "@b-fuze/deno-dom": "jsr:@b-fuze/deno-dom@^0.1.49",
