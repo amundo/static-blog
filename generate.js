@@ -18,7 +18,10 @@ const build = async ({
   outputDirectory = 'blog',
   templateDirectory = 'templates'
 } = {}) => {
-  // Resolve paths
+  // Store original relative paths before resolving
+  const originalOutputDir = outputDirectory
+  
+  // Resolve absolute paths
   postsDirectory = join(Deno.cwd(), postsDirectory)
   outputDirectory = join(Deno.cwd(), outputDirectory)
   templateDirectory = join(Deno.cwd(), templateDirectory)
@@ -74,8 +77,8 @@ const build = async ({
     Object.assign(metadata, {
       markdownPath: postFileEntry.path,
       outputPath,
-      // Fix: Use relative URL path instead of absolute file path
-      url: `/${outputFileName}`,
+      // Create URL relative to the project structure
+      url: `${originalOutputDir}/${outputFileName}`,
     })
     
     // Store post information
