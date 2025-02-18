@@ -1,65 +1,9 @@
----
-title: Static Site Generator - Stage 1
-date: 2025-02-17
-description: Documentation of the initial version of our Deno-based static site generator
-chapter: 1f
----
-
-This is the initial version of our static site generator built with Deno. It
-provides basic functionality for converting markdown files with YAML frontmatter
-into HTML pages.
-
-## Features
-
-- Converts markdown files to HTML using marked
-- Supports YAML frontmatter for metadata
-- Basic responsive styling
-- Simple directory structure
-
-## Usage
-
-### Directory Structure
-
-```
-your-project/
-  ├── posts/            # Your markdown files go here
-  │   └── post-1.md
-  ├── blog/             # Generated HTML files appear here
-  └── generate.js      # The static site generator script
-```
-
-### Markdown Format
-
-Your markdown files should include YAML frontmatter at the top:
-
-```markdown
----
-title: Your Post Title
-date: 2025-02-17
----
-
-Your markdown content goes here...
-```
-
-### Running the Generator
-
-```bash
-deno run --allow-read --allow-write --unstable-temporal generator.js
-```
-
-
-## How It Works
-
-The generator is built using modern JavaScript and Deno. Here's the complete
-code with explanations:
-
-
-```js
 import { basename, join, dirname } from "@std/path"
 import { ensureDir, expandGlob } from "@std/fs"
 import { extract } from "@std/front-matter/any"
 import { parse } from "@marked"
 import { renderTemplate } from "./render-template.js"
+
 
 /**
  * Build a static site from markdown files
@@ -232,46 +176,3 @@ if (import.meta.main) {
 }
 
 export { build }
-```
-
-### Code Breakdown
-
-1. **Imports**:
-   - `@std/path`: For path manipulation
-   - `@std/fs`: For file system operations
-   - `@std/front_matter/any`: For parsing YAML frontmatter
-   - `@marked`: For converting markdown to HTML (from npm)
-
-2. **HTML Generation**:
-   - The `generatePage` function creates a complete HTML page
-   - Includes responsive styling with system fonts
-   - Centers content with max-width for readability
-   - Styles code blocks with a light gray background
-
-3. **File Processing**:
-   - `processFile` handles individual markdown files
-   - Extracts frontmatter metadata
-   - Converts markdown to HTML using marked
-   - Writes the final HTML file
-
-4. **Build Process**:
-   - Creates the output directory if it doesn't exist
-   - Finds all markdown files in the posts directory
-   - Processes files concurrently using `Promise.all`
-
-## Next Steps
-
-Future enhancements planned:
-
-- Index page generation
-- File watching for development
-- Tag support
-- Syntax highlighting
-- Cache invalidation for faster builds
-
-## Requirements
-
-- Deno 1.41 or later
-- Write permissions for the output directory
-- Read permissions for the posts directory
-- npm package: marked

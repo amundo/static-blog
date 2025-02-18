@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Site Generator - Stage 1</title>
+    <style>
+      body {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+      }
+      pre {
+        padding: 1rem;
+        background: #f6f8fa;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <article>
+      <nav>
+        <span class="previous-post"></span>
+        <span class="next-post"></span>
+      </nav>
+
+      <header>
+        <h1 class="post-title">Static Site Generator - Stage 1</h1>
+        <h2 class="post-author"></h2>
+        <time class="post-date"></time>
+        <div class="post-tags"></div>
+        <div class="post-description">Documentation of the initial version of our Deno-based static site generator</div>
+      </header>
+
+      <main class="post-content"><p>This is the initial version of our static site generator built with Deno. It
+provides basic functionality for converting markdown files with YAML frontmatter
+into HTML pages.</p>
+<h2>Features</h2>
+<ul>
+<li>Converts markdown files to HTML using marked</li>
+<li>Supports YAML frontmatter for metadata</li>
+<li>Basic responsive styling</li>
+<li>Simple directory structure</li>
+</ul>
+<h2>Usage</h2>
+<h3>Directory Structure</h3>
+<pre><code>your-project/
+  ├── posts/            # Your markdown files go here
+  │   └── post-1.md
+  ├── blog/             # Generated HTML files appear here
+  └── generate.js      # The static site generator script
+</code></pre>
+<h3>Markdown Format</h3>
+<p>Your markdown files should include YAML frontmatter at the top:</p>
+<pre><code class="language-markdown">---
+title: Your Post Title
+date: 2025-02-17
+---
+
+Your markdown content goes here...
+</code></pre>
+<h3>Running the Generator</h3>
+<pre><code class="language-bash">deno run --allow-read --allow-write generator.js
+</code></pre>
+<h2>How It Works</h2>
+<p>The generator is built using modern JavaScript and Deno. Here's the complete
+code with explanations:</p>
+<pre><code class="language-js">import { join } from "@std/path"
+import { ensureDir } from "@std/fs"
+import { extract } from "@std/front_matter/any"
+import { parse } from "@marked"
+
+// Generate HTML page from template and content
+function generatePage(content, metadata) {
+  return `
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;${metadata.title}&lt;/title&gt;
+    &lt;style&gt;
+      body {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+      }
+      pre {
+        padding: 1rem;
+        background: #f6f8fa;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;article&gt;
+        &lt;h1&gt;${metadata.title}&lt;/h1&gt;
+        &lt;time&gt;${new Date(metadata.date).toLocaleDateString()}&lt;/time&gt;
+        ${content}
+    &lt;/article&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+  `
+}
+
+// Process a single markdown file
+async function processFile(srcPath, destDir) {
+  const fileName = srcPath.split("/").pop()
+  const baseName = fileName?.split(".")[0]
+  const destPath = join(destDir, `${baseName}.html`)
+
+  try {
+    const content = await Deno.readTextFile(srcPath)
+    const { attrs: metadata, body } = extract(content)
+    const html = parse(body)
+    const pageHtml = generatePage(html, metadata)
+
+    await Deno.writeTextFile(destPath, pageHtml)
+    console.log(`Generated ${baseName}.html`)
+  } catch (error) {
+    console.error(`Error processing ${baseName}:`, error)
+  }
+}
+
+// Main build function
+async function build(postsDir = "./posts", outputDir = "./blog") {
+  try {
+    await ensureDir(outputDir)
+
+    const files = []
+    for await (const entry of Deno.readDir(postsDir)) {
+      if (entry.isFile &amp;&amp; entry.name.endsWith(".md")) {
+        files.push(entry.name)
+      }
+    }
+
+    await Promise.all(
+      files.map((file) =&gt; processFile(join(postsDir, file), outputDir)),
+    )
+  } catch (error) {
+    console.error("Build failed:", error)
+  }
+}
+
+// CLI
+if (import.meta.main) {
+  await build()
+}
+</code></pre>
+<h3>Code Breakdown</h3>
+<ol>
+<li><p><strong>Imports</strong>:</p>
+<ul>
+<li><code>@std/path</code>: For path manipulation</li>
+<li><code>@std/fs</code>: For file system operations</li>
+<li><code>@std/front_matter/any</code>: For parsing YAML frontmatter</li>
+<li><code>@marked</code>: For converting markdown to HTML (from npm)</li>
+</ul>
+</li>
+<li><p><strong>HTML Generation</strong>:</p>
+<ul>
+<li>The <code>generatePage</code> function creates a complete HTML page</li>
+<li>Includes responsive styling with system fonts</li>
+<li>Centers content with max-width for readability</li>
+<li>Styles code blocks with a light gray background</li>
+</ul>
+</li>
+<li><p><strong>File Processing</strong>:</p>
+<ul>
+<li><code>processFile</code> handles individual markdown files</li>
+<li>Extracts frontmatter metadata</li>
+<li>Converts markdown to HTML using marked</li>
+<li>Writes the final HTML file</li>
+</ul>
+</li>
+<li><p><strong>Build Process</strong>:</p>
+<ul>
+<li>Creates the output directory if it doesn't exist</li>
+<li>Finds all markdown files in the posts directory</li>
+<li>Processes files concurrently using <code>Promise.all</code></li>
+</ul>
+</li>
+</ol>
+<h2>Next Steps</h2>
+<p>Future enhancements planned:</p>
+<ul>
+<li>Index page generation</li>
+<li>File watching for development</li>
+<li>Tag support</li>
+<li>Syntax highlighting</li>
+<li>Cache invalidation for faster builds</li>
+</ul>
+<h2>Requirements</h2>
+<ul>
+<li>Deno 1.41 or later</li>
+<li>Write permissions for the output directory</li>
+<li>Read permissions for the posts directory</li>
+<li>npm package: marked</li>
+</ul>
+</main>
+
+      <footer></footer>
+    </article>
+  
+
+</body></html>

@@ -1,61 +1,9 @@
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
+<!doctype html>
+<html lang="en"><head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Static Site Generator - Stage 1</title>
-    <link  rel="stylesheet" href="css/blog.css">
-</head>
-<body>
-    <article>
-        <h1>Static Site Generator - Stage 1</h1>
-        <time>2/16/2025</time>
-        <p>This is the initial version of our static site generator built with Deno. It provides basic functionality for converting markdown files with YAML frontmatter into HTML pages.</p>
-<h2>Features</h2>
-<ul>
-<li>Converts markdown files to HTML using marked</li>
-<li>Supports YAML frontmatter for metadata</li>
-<li>Basic responsive styling</li>
-<li>Simple directory structure</li>
-</ul>
-<h2>Usage</h2>
-<h3>Directory Structure</h3>
-<pre><code>your-project/
-  ├── posts/            # Your markdown files go here
-  │   └── post-1.md
-  ├── blog/             # Generated HTML files appear here
-  └── generator.js      # The static site generator script
-</code></pre>
-<h3>Markdown Format</h3>
-<p>Your markdown files should include YAML frontmatter at the top:</p>
-<pre><code class="language-markdown">---
-title: Your Post Title
-date: 2025-02-17
----
-
-Your markdown content goes here...
-</code></pre>
-<h3>Running the Generator</h3>
-<pre><code class="language-bash">deno run --allow-read --allow-write generator.js
-</code></pre>
-<h2>How It Works</h2>
-<p>The generator is built using modern JavaScript and Deno. Here&#39;s the complete code with explanations:</p>
-<pre><code class="language-js">import { join } from &quot;@std/path&quot;;
-import { ensureDir } from &quot;@std/fs&quot;;
-import { extract } from &quot;@std/front_matter/any&quot;;
-import { parse } from &#39;@marked&#39;;
-
-// Generate HTML page from template and content
-function generatePage(content, metadata) {
-  return `
-&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
-&lt;head&gt;
-    &lt;meta charset=&quot;UTF-8&quot;&gt;
-    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
-    &lt;title&gt;${metadata.title}&lt;/title&gt;
-    &lt;style&gt;
+    <style>
       body {
         max-width: 800px;
         margin: 0 auto;
@@ -69,64 +17,234 @@ function generatePage(content, metadata) {
         border-radius: 4px;
         overflow-x: auto;
       }
-    &lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-    &lt;article&gt;
-        &lt;h1&gt;${metadata.title}&lt;/h1&gt;
-        &lt;time&gt;${new Date(metadata.date).toLocaleDateString()}&lt;/time&gt;
-        ${content}
-    &lt;/article&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-  `;
-}
+    </style>
+  </head>
+  <body>
+    <article>
+      <nav>
+        <a href="index.html" class="home-link">Home</a>
+        <span class="previous-post"></span>
+        <span class="next-post"><a href="2.html">Static Site Generator - Adding Watch Mode - Stage 2 →</a></span>
+      </nav>
 
-// Process a single markdown file
-async function processFile(srcPath, destDir) {
-  const fileName = srcPath.split(&#39;/&#39;).pop();
-  const baseName = fileName?.split(&#39;.&#39;)[0];
-  const destPath = join(destDir, `${baseName}.html`);
+      <header>
+        <h1 class="post-title">Static Site Generator - Stage 1</h1>
+        <h2 class="post-author"></h2>
+        <time class="post-date"></time>
+        <div class="post-tags"></div>
+        <div class="post-description">Documentation of the initial version of our Deno-based static site generator</div>
+      </header>
 
-  try {
-    const content = await Deno.readTextFile(srcPath);
-    const { attrs: metadata, body } = extract(content);
-    const html = parse(body);
-    const pageHtml = generatePage(html, metadata);
+      <main class="post-content"><p>This is the initial version of our static site generator built with Deno. It
+provides basic functionality for converting markdown files with YAML frontmatter
+into HTML pages.</p>
+<h2>Features</h2>
+<ul>
+<li>Converts markdown files to HTML using marked</li>
+<li>Supports YAML frontmatter for metadata</li>
+<li>Basic responsive styling</li>
+<li>Simple directory structure</li>
+</ul>
+<h2>Usage</h2>
+<h3>Directory Structure</h3>
+<pre><code>your-project/
+  ├── posts/            # Your markdown files go here
+  │   └── post-1.md
+  ├── blog/             # Generated HTML files appear here
+  └── generate.js      # The static site generator script
+</code></pre>
+<h3>Markdown Format</h3>
+<p>Your markdown files should include YAML frontmatter at the top:</p>
+<pre><code class="language-markdown">---
+title: Your Post Title
+date: 2025-02-17
+---
+
+Your markdown content goes here...
+</code></pre>
+<h3>Running the Generator</h3>
+<pre><code class="language-bash">deno run --allow-read --allow-write --unstable-temporal generator.js
+</code></pre>
+<h2>How It Works</h2>
+<p>The generator is built using modern JavaScript and Deno. Here's the complete
+code with explanations:</p>
+<pre><code class="language-js">import { basename, join, dirname } from "@std/path"
+import { ensureDir, expandGlob } from "@std/fs"
+import { extract } from "@std/front-matter/any"
+import { parse } from "@marked"
+import { renderTemplate } from "./render-template.js"
+
+/**
+ * Build a static site from markdown files
+ * 
+ * @param {Object} options Build options
+ * @param {String} options.postsDirectory Directory containing markdown files
+ * @param {String} options.outputDirectory Directory to write generated files
+ * @param {String} options.templateDirectory Directory containing HTML templates
+ * @returns {Object} Build results
+ */
+const build = async ({ 
+  postsDirectory = 'posts', 
+  outputDirectory = 'blog',
+  templateDirectory = 'templates'
+} = {}) =&gt; {
+  // Store original relative paths before resolving
+  const originalOutputDir = outputDirectory
+  
+  
+  // Ensure directories exist
+  await ensureDir(postsDirectory)
+  await ensureDir(outputDirectory)
+  await ensureDir(templateDirectory)
+  
+  // Read templates
+  const postTemplatePath = join(templateDirectory, "post-template.html")
+  const indexTemplatePath = join(templateDirectory, "index-template.html")
+  const postTemplate = await Deno.readTextFile(postTemplatePath)
+  const indexTemplate = await Deno.readTextFile(indexTemplatePath)
+  
+  // Find all markdown files
+  const globPattern = `${postsDirectory}/*.md`
+  const postFileEntries = await Array.fromAsync(expandGlob(globPattern))
+  
+  // Process all posts
+  const posts = []
+  
+  for (const postFileEntry of postFileEntries) {
+    // Read and parse markdown
+    const postMarkdown = await Deno.readTextFile(postFileEntry.path)
+    const { attrs: metadata, body: markdown } = extract(postMarkdown)
     
-    await Deno.writeTextFile(destPath, pageHtml);
-    console.log(`Generated ${baseName}.html`);
-  } catch (error) {
-    console.error(`Error processing ${baseName}:`, error);
-  }
-}
-
-// Main build function
-async function build(postsDir = &#39;./posts&#39;, outputDir = &#39;./blog&#39;) {
-  try {
-    await ensureDir(outputDir);
+    // Generate HTML from markdown
+    const html = parse(markdown)
     
-    const files = [];
-    for await (const entry of Deno.readDir(postsDir)) {
-      if (entry.isFile &amp;&amp; entry.name.endsWith(&#39;.md&#39;)) {
-        files.push(entry.name);
+    // Prepare filename info
+    const fileName = basename(postFileEntry.path, ".md")
+    const outputFileName = `${fileName}.html`
+    const outputPath = join(outputDirectory, outputFileName)
+    
+    // Normalize date if present
+    if (metadata.date &amp;&amp; typeof metadata.date === 'string') {
+      try {
+        // Ensure consistent date format
+        const date = new Date(metadata.date)
+        metadata.isoDate = date.toISOString()
+        metadata.formattedDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      } catch (e) {
+        console.warn(`Invalid date format in ${fileName}: ${metadata.date}`)
       }
     }
     
-    await Promise.all(
-      files.map(file =&gt; 
-        processFile(join(postsDir, file), outputDir)
-      )
-    );
-  } catch (error) {
-    console.error(&#39;Build failed:&#39;, error);
+    // Add file paths to metadata
+    Object.assign(metadata, {
+      markdownPath: postFileEntry.path,
+      outputPath,
+      // Create URL relative to the project structure
+      url: `${outputFileName}`,
+    })
+    
+    // Store post information
+    posts.push({
+      metadata,
+      markdown,
+      html,
+    })
   }
+  
+  // Sort posts by date (newest first)
+  posts.sort((a, b) =&gt; {
+    // Use isoDate if available, otherwise fallback to comparison
+    const dateA = a.metadata.isoDate ? new Date(a.metadata.isoDate) : new Date(0)
+    const dateB = b.metadata.isoDate ? new Date(b.metadata.isoDate) : new Date(0)
+    return dateB - dateA
+  })
+  
+  // Add navigation links
+  posts.forEach((post, index) =&gt; {
+    post.metadata.isFirst = index === 0
+    post.metadata.isLast = index === posts.length - 1
+    post.metadata.previousPost = index &gt; 0 ? posts[index - 1].metadata : null
+    post.metadata.nextPost = index &lt; posts.length - 1 ? posts[index + 1].metadata : null
+  })
+
+  // Generate post files
+  for (const post of posts) {
+    const { metadata, html } = post
+    
+    // Render the post using template
+    const renderedPost = `&lt;!doctype html&gt;\n` + renderTemplate(postTemplate, {
+      'title': metadata.title || 'Untitled Post',
+      '.post-date': metadata.formattedDate || '',
+      'main': html,
+      '.post-title': metadata.title || 'Untitled Post',
+      '.post-description': metadata.description || '',
+      '.post-author': metadata.author || '',
+      '.post-tags': metadata.tags ? metadata.tags.join(', ') : '',
+      
+      // Navigation
+      '.previous-post': metadata.previousPost ? 
+        `&lt;a href="${metadata.previousPost.url}"&gt;&amp;larr; ${metadata.previousPost.title}&lt;/a&gt;` : '',
+      '.next-post': metadata.nextPost ? 
+        `&lt;a href="${metadata.nextPost.url}"&gt;${metadata.nextPost.title} &amp;rarr;&lt;/a&gt;` : '',
+    })
+    
+    // Write post file
+    await ensureDir(dirname(metadata.outputPath))
+    await Deno.writeTextFile(metadata.outputPath, renderedPost)
+  }
+  
+  // Extract metadata for index
+  const postMetadata = posts.map(post =&gt; post.metadata)
+  
+  // Build index page
+  const indexHtml = renderTemplate(indexTemplate, {
+    '.post-list': buildPostList(postMetadata),
+    'title': 'Blog Index',
+    '.blog-title': 'My Blog',
+    '.blog-description': 'A collection of my thoughts and ideas',
+  })
+  
+  // Write index file
+  const indexOutputPath = join(outputDirectory, "index.html")
+  await Deno.writeTextFile(indexOutputPath, indexHtml)
+  console.log(`Generated: ${indexOutputPath}`)
+  
+  console.log(`Build complete: ${posts.length} posts generated`)
+  return { posts: postMetadata }
 }
 
-// CLI
-if (import.meta.main) {
-  await build();
+/**
+ * Generate HTML for the post list
+ * 
+ * @param {Array} posts List of post metadata objects
+ * @returns {String} HTML for the post list
+ */
+function buildPostList(posts) {
+  return posts.map(post =&gt; {
+    return `
+      &lt;article class="post-item"&gt;
+        &lt;header&gt;
+          &lt;h2&gt;&lt;a href="${post.url}"&gt;${post.title || 'Untitled Post'}&lt;/a&gt;&lt;/h2&gt;
+          ${post.formattedDate ? `&lt;time datetime="${post.isoDate}"&gt;${post.formattedDate}&lt;/time&gt;` : ''}
+        &lt;/header&gt;
+        ${post.description ? `&lt;p&gt;${post.description}&lt;/p&gt;` : ''}
+        ${post.tags ? `&lt;div class="tags"&gt;${post.tags.map(tag =&gt; 
+          `&lt;span class="tag"&gt;${tag}&lt;/span&gt;`).join('')}&lt;/div&gt;` : ''}
+      &lt;/article&gt;
+    `
+  }).join('\n')
 }
+
+// Run build if executed directly
+if (import.meta.main) {
+  await build()
+}
+
+export { build }
 </code></pre>
 <h3>Code Breakdown</h3>
 <ol>
@@ -156,7 +274,7 @@ if (import.meta.main) {
 </li>
 <li><p><strong>Build Process</strong>:</p>
 <ul>
-<li>Creates the output directory if it doesn&#39;t exist</li>
+<li>Creates the output directory if it doesn't exist</li>
 <li>Finds all markdown files in the posts directory</li>
 <li>Processes files concurrently using <code>Promise.all</code></li>
 </ul>
@@ -178,15 +296,10 @@ if (import.meta.main) {
 <li>Read permissions for the posts directory</li>
 <li>npm package: marked</li>
 </ul>
+</main>
 
+      <footer></footer>
     </article>
-<<<<<<< Updated upstream
-=======
-    <script type=module>
-    import * as Prism from './lib/prism/Prism.js';
-    window.Prism = Prism
-    </script>
->>>>>>> Stashed changes
-</body>
-</html>
   
+
+</body></html>
