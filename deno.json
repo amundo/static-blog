@@ -4,8 +4,7 @@
     "watch": "deno --allow-read --allow-write --unstable-temporal watch.js",
     "doc": "deno doc --html generate.js",
     "clean": "rm blog/*.html",
-    "mac": "deno compile --include posts --include blog --include templates --allow-read --allow-write --allow-net --target x86_64-apple-darwin -o generator generate.js",
-    "linux": "deno compile --include posts --include blog --include templates --allow-read --allow-write --allow-net --target x86_64-unknown-linux-gnu -o generator generate.js"
+    "deploy": "rsync -rtpv  . ruphusco@ruphus.com:ruphus.com/blog/ --exclude .git --exclude .DS_Store --exclude node_modules --exclude blog/.DS_Store --exclude blog/.git --exclude blog/.gitignore --exclude blog/README.md --exclude blog/package.json --exclude blog/package-lock.json",
   },
   "imports": {
     "@b-fuze/deno-dom": "jsr:@b-fuze/deno-dom@^0.1.49",

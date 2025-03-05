@@ -15,7 +15,7 @@ import { renderTemplate } from "./render-template.js"
  */
 const buildStaticSite = async ({ 
   postsDirectory = 'posts', 
-  outputDirectory = 'blog',
+  outputDirectory = '.',
   templateDirectory = 'templates'
 } = {}) => {
   // Prepare environment and load templates
@@ -222,8 +222,8 @@ async function generateIndexPage(posts, indexTemplate, outputDirectory) {
   const indexHtml = renderTemplate(indexTemplate, {
     '.post-list': createPostListHtml(postMetadata),
     'title': 'Blog Index',
-    '.blog-title': 'My Blog',
-    '.blog-description': 'A collection of my thoughts and ideas',
+    '.blog-title': 'A blog',
+    '.blog-description': 'Web programming, linguistics, paranoia.'
   });
   
   // Write index file
